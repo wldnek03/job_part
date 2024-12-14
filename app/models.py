@@ -44,3 +44,4 @@ class Money(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_notice_id = db.Column(db.Integer, db.ForeignKey('job_notice.id'), nullable=False)
     salary = db.Column(db.String(50), nullable=False)
+
