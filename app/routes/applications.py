@@ -5,23 +5,38 @@ from app.models import Application, db
 
 bp = Blueprint('applications', __name__)
 
-# 지원하기
 @bp.route('/', methods=['POST'])
 @jwt_required()
 def apply():
+    """
+    지원하기
+    ---
+    tags:
+      - Applications
+    parameters:
+      - name: job_notice_id
+        in: body
+        type: integer
+        required: true
+        description: "지원하려는 채용 공고 ID"
+    responses:
+      201:
+        description: "지원 성공"
+      400:
+        description: "잘못된 입력 또는 중복 지원 시 발생"
+      500:
+        description: "서버 오류 발생"
+    """
     user_id = get_jwt_identity()
     data = request.get_json()
 
-    # 필수 데이터 체크
     if not data or 'job_notice_id' not in data:
         return jsonify({"error": "job_notice_id is required"}), 400
 
-    # 중복 지원 방지
     existing_application = Application.query.filter_by(user_id=user_id, job_notice_id=data['job_notice_id']).first()
     if existing_application:
         return jsonify({"error": "You have already applied for this job"}), 400
 
-    # 새로운 지원 생성
     application = Application(
         user_id=user_id,
         job_notice_id=data['job_notice_id'],
@@ -36,13 +51,29 @@ def apply():
         db.session.rollback()
         return jsonify({"error": "Failed to submit application"}), 500
 
-# 지원 내역 조회
+
 @bp.route('/', methods=['GET'])
 @jwt_required()
 def get_applications():
+    """
+    지원 내역 조회
+    ---
+    tags:
+      - Applications
+    parameters:
+      - name: status_filter
+        in: query
+        type: string
+        required: false
+        description: "필터링할 상태 (예: '지원 완료', '취소됨')"
+    responses:
+      200:
+        description: "지원 내역 반환 성공"
+      401:
+        description: "인증 실패 (유효하지 않은 JWT 토큰)"
+    """
     user_id = get_jwt_identity()
 
-    # 쿼리 파라미터로 상태 처리
     status_filter = request.args.get('status', None)
 
     query = Application.query.filter_by(user_id=user_id)
@@ -63,23 +94,41 @@ def get_applications():
     
     return jsonify(result), 200
 
-# 지원 취소
+
 @bp.route('/<int:application_id>', methods=['DELETE'])
 @jwt_required()
 def cancel_application(application_id):
+    """
+    지원 취소하기
+    ---
+    tags:
+      - Applications
+    parameters:
+      - name: application_id
+        in: path
+        type: integer
+        required: true
+        description: "취소하려는 지원 ID"
+    responses:
+      200:
+        description: "지원 취소 성공적으로 완료됨."
+      400:
+        description: "잘못된 요청 또는 취소 불가능한 상태일 경우."
+      404:
+        description: "해당 지원 정보를 찾을 수 없음."
+      500:
+        description: "서버 오류 발생."
+    """
     user_id = get_jwt_identity()
 
-    # 지원 정보 가져오기
     application = Application.query.filter_by(id=application_id, user_id=user_id).first()
 
     if not application:
         return jsonify({"error": "Application not found"}), 404
 
-    # 취소 가능 여부 확인 (예: 상태가 '지원 완료'일 때만 취소 가능)
     if application.status != "지원 완료":
         return jsonify({"error": "Application cannot be canceled"}), 400
 
-    # 상태 업데이트
     application.status = "취소됨"
     
     try:

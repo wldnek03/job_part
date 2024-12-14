@@ -18,6 +18,25 @@ def is_valid_email(email):
 
 @bp.route('/register', methods=['POST'])
 def register():
+    """
+    사용자 등록
+    ---
+    tags:
+      - Auth
+    parameters:
+      - name: username,  email, password
+        in: body
+        type: string
+        required: true
+        description: 사용자 이름, 사용자 이메일 주소, 사용자 비밀번호 
+    responses:
+      201:
+        description: 사용자 등록 성공
+      400:
+        description: 잘못된 입력 또는 중복된 이메일
+      500:
+        description: 서버 오류 발생
+    """
     data = request.get_json()
 
     # 요청 데이터 검증
@@ -47,6 +66,25 @@ def register():
 
 @bp.route('/login', methods=['POST'])
 def login():
+    """
+    사용자 로그인
+    ---
+    tags:
+      - Auth
+    parameters:
+      - name: email, password
+        in: body
+        type: string
+        required: true
+        description: 사용자 이메일 주소, 사용자 비밀번호
+    responses:
+      200:
+        description: 로그인 성공 및 토큰 반환
+      400:
+        description: 잘못된 입력 데이터 제공됨
+      401:
+        description: 인증 실패 (잘못된 자격 증명)
+    """
     data = request.get_json()
 
     # 요청 데이터 검증
@@ -77,6 +115,20 @@ def login():
 @bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
+    """
+    Access Token 갱신하기 (Refresh Token 필요)
+    ---
+    tags:
+      - Auth 
+    security:
+      - BearerAuth: []
+    responses:
+      200:
+        description: 새로운 Access Token 반환 성공적임.
+      401:
+        description: 인증 실패 (유효하지 않은 Refresh Token)
+    """
+    
     current_user_id = get_jwt_identity()
     
     # 새로운 Access Token 생성
@@ -87,28 +139,70 @@ def refresh():
 @bp.route('/protected', methods=['GET'])
 @jwt_required()
 def protected():
-    current_user_id = get_jwt_identity()  # 현재 사용자 ID 가져오기
-    return jsonify({"message": f"Hello user {current_user_id}!"}), 200
+   """
+   보호된 경로 접근 (Access Token 필요)
+   ---
+   tags:
+     - Auth 
+   security:
+     - BearerAuth: []
+   responses:
+     200:
+       description : 보호된 경로에 접근 성공적임.
+     401 :
+       description : 인증 실패 (유효하지 않은 Access Token) 
+   """
+   
+   current_user_id=get_jwt_identity() 
+   
+   return jsonify({"message" : f"Hello user {current_user_id}!"}),200 
 
-@bp.route('/profile', methods=['PUT'])
+@bp.route('/profile',methods=['PUT'])
 @jwt_required()
 def update_profile():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+   """
+   프로필 업데이트 
+   ---
+   tags :
+     - Auth 
+   security:
+     - BearerAuth: []
+   parameters:
+     - name : username , password 
+       in : body 
+       type : string 
+       required : false 
+       description : 새 사용자 이름 , 새 비밀번호 
 
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+   responses :
+     200 :
+       description : 프로필 업데이트 성공적임.
+     404 :
+       description : 사용자 찾을 수 없음.
+     401 :
+       description : 인증 실패 (유효하지 않은 Access Token) 
 
-    data = request.get_json()
+   """
+   
+   current_user_id=get_jwt_identity() 
+   
+   user=User.query.get(current_user_id)
 
-    # 비밀번호 변경
-    if 'password' in data:
-        user.password = generate_password_hash(data['password'], method='pbkdf2:sha256')
+   if not user :
+       return jsonify ({"error" :"User not found"}),404
 
-    # 프로필 정보 수정
-    if 'username' in data:
-        user.username = data['username']
-    
-    db.session.commit()
-    
-    return jsonify({"message": "Profile updated successfully"}), 200
+   data=request.get_json()
+
+   # 비밀번호 변경 
+   
+   if 'password' in data :
+       user.password=generate_password_hash(data['password'],method='pbkdf2 : sha256')
+
+   # 프로필 정보 수정
+   
+   if 'username' in data :
+       user.username=data['username']
+   
+   db.session.commit()
+   
+   return jsonify ({"message" :"Profile updated successfully"}),200 
