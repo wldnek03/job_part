@@ -60,7 +60,7 @@ pip install -r requirements.txt
 ### 2단계: 애플리케이션 실행
 
 ```bash
-flask run 
+python run.py
 ```
 
 ## 주요 기능
