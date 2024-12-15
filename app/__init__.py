@@ -8,6 +8,9 @@ jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
+    @app.route('/')
+    def home():
+        return "Hello, World!"
     app.config['SECRET_KEY'] = 'your_secret_key'
     app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
     app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:easycow0304@10.0.0.251/job"
@@ -46,7 +49,7 @@ def create_app():
                 "email": "support@example.com"
             }
         },
-        "host": "127.0.0.1:5000",  # 실제 배포 시 변경
+        "host": "113.198.66.75:13251",  # 실제 배포 시 변경
         "basePath": "/",
         "securityDefinitions": {
             "BearerAuth": {
@@ -76,4 +79,4 @@ def create_app():
     return app
 
 if __name__ == '__main__':
-    create_app().run(debug=True)
+    create_app().run(host='0.0.0.0', port=3000, debug=True)
